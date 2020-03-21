@@ -1,12 +1,25 @@
 import numpy as np 
 import matplotlib.pyplot as plt
+import time
+
 
 class Graph():
 
-    def __init__(self, n):
-        self.vertices = n
-        self.edges = np.zeros((n,n),dtype=int)
-        self.shape = self.edges.shape
+    def __init__(self, n, edges = None):
+        if edges is None:
+            self.vertices = n
+            self.edges = np.zeros((n,n),dtype=int)
+            self.shape = self.edges.shape
+        else :
+            if edges.shape[0] is not edges.shape[1]:
+                return 'Error'
+            if n is not edges.shape[0]:
+                return 'Error'
+
+            self.vertices = n 
+            self.edges = edges
+            self.shape = edges.shape
+
     
     def add_edge(self,edge):
         ### add an edge via a tuple
@@ -63,63 +76,74 @@ class Graph():
         return group
 
 
-    def visualize(self, kr=0.5,ks = 1, d = 1):
+    def visualize(self, kr = .05, ks = .08, d = 0, g = 0.5):
         # a paper on graph visualizations
         # http://jgaa.info/accepted/2003/Walshaw2003.7.3.pdf
 
         # positive is repusive, negative is attractive 
         # x = seperation, q = weight term
-        f_repel  = lambda x,qr : (qr*kr)/(x**2) # a inverse square law for the similar to charge 
+        f_repel  = lambda x,qr : (qr*kr)/(x**2) # a inverse square law for the similar to coloumb law
         f_spring = lambda x,qs : -qs*ks*(x - d) # a spring force with a minimum potential at separation of x = d
+        f_gravity = lambda m : -m*g # an attractive force towards the origin
+        cool = lambda t : rate*t # cooling function to slow motion
 
         # first initially distribute the points
         new_coords = 2*np.random.rand(2,self.vertices) - 1
         old_coords = 2*np.random.rand(2,self.vertices) - 1
-        delta = np.sum(np.abs(old_coords - new_coords))
-        counter = 1
-        tol = 0.1
-        
 
-        while delta > tol:
-            counter += 1
+        tol = .01
+        converged = False
+        temp = 1
+        rate = 0.9
+        
+        while not converged:
+            converged = True
+        
             old_coords = np.copy(new_coords)
 
             for i in range(self.vertices):
+                displacement = np.zeros(new_coords.shape[0]) # will update all i node
+
                 for j in range(self.vertices):
                     # nudge each pair towards a minimum 
     
-                    if i == j : 
-                        continue 
+                    if i == j : continue 
                     
                     sep_vector = old_coords[:,i] - old_coords[:,j] # pointing from j to i (positive is repulsive)
                     sep_dist = np.sum(np.abs(sep_vector))
-
-
-                    # if sep_dist == 0:
-                    #     # go in a random direction
-                    #     theta = 2*np.pi*np.random.rand()
-                    #     rand_dir = np.array([np.cos(theta), np.sin(theta)]).reshape((2,))
-                    #     # rely on the spring force for repulsion at such close distances
-                    #     new_coords[:,i] +=  rand_dir * (1/counter) * f_spring(sep_dist, self.edges[i,j])
-
-                    if sep_dist > 5:
-                       # rely on the spring force for repulsion at such far distances
-                        new_coords[:,i] += (sep_vector/sep_dist) * (1/counter) * f_spring(sep_dist, self.edges[i,j])
-
+                
+                    # repulsive force
+                    # if sep_dist < 5:
+                    displacement += (sep_vector/sep_dist) * f_repel(sep_dist,1) 
+                    # print(' Repel force: ',f_repel(sep_dist,1))
                         
-                    
-                    else:
-                        new_coords[:,i] += (sep_vector/sep_dist) * (1/counter) * (f_repel(sep_dist,1) + f_spring(sep_dist, self.edges[i,j])) 
 
-            # plt.scatter(new_coords[0,:],new_coords[1,:], c=['r','r','b','b'])
-            # plt.show()
-            delta = np.sum(np.abs(old_coords - new_coords)) # a measure of the change in the coordinates
-            print(delta)
+                    # attractive edge forces
+                    displacement += (sep_vector/sep_dist) * f_spring(sep_dist, self.edges[i,j]) 
+                    # print('Spring force: ',f_spring(sep_dist, self.edges[i,j]))
+                    # self.edges determines if an edge connectes i and j
 
-        
-        coords = new_coords
-        # print(coords[0,:], coords[1,:])
-        return coords[0,:], coords[1,:]
+                displacement += (old_coords[:,i]/np.sum(np.abs(old_coords))) * f_gravity(1)
+
+                # time.sleep(0.05)
+                # print('displacement: ',displacement)
+                displacement_mag = np.sum(np.abs(displacement))
+                # print(displacement_mag)
+                # break
+                new_coords[:,i] += (displacement/displacement_mag)*min(temp, displacement_mag)
+                # print(new_coords)
+                # new_coords[:,i] += displacement*temp/self.vertices
+                delta = np.sum(np.abs(new_coords[:,i] - old_coords[:,i]))
+
+                print('delta: ', delta)
+                # plt.scatter(new_coords[0,:],new_coords[1,:])
+                # plt.show()
+                if delta > tol*(ks+kr+g): converged = False
+
+            cool(temp) 
+
+
+        return new_coords[0,:], new_coords[1,:]
 
 
 

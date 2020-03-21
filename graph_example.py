@@ -2,33 +2,45 @@ import graph
 import plotly.graph_objects as go
 import plotly.io as pio
 import numpy as np
+import random
 
-n = 18
+# n = 18
 
-g = graph.Graph(n)
-g.add_edge((0,1))
-g.add_edge((1,6))
-g.add_edge((6,0))
+# g = graph.Graph(n)
+# g.add_edge((0,1))
+# g.add_edge((1,6))
+# g.add_edge((6,0))
 
-g.add_edge((2,3))
-g.add_edge((3,9))
-g.add_edge((9,8))
-g.add_edge((8,2))
-g.add_edge((2,7))
-g.add_edge((12,7))
-g.add_edge((13,8))
-g.add_edge((9,4))
+# g.add_edge((2,3))
+# g.add_edge((3,9))
+# g.add_edge((9,8))
+# g.add_edge((8,2))
+# g.add_edge((2,7))
+# g.add_edge((12,7))
+# g.add_edge((13,8))
+# g.add_edge((9,4))
 
-g.add_edge((14,15))
+# g.add_edge((14,15))
 
-g.add_edge((5,10))
-g.add_edge((10,17))
+# g.add_edge((5,10))
+# g.add_edge((10,17))
 
-g.add_edge((11,16))
+# g.add_edge((11,16))
 
-x,y = g.visualize(kr = 0.2, ks = 1, d = 0.5)
+# x,y = g.visualize()
+# edges = g.get_edges()
+
+n = 20
+a = np.zeros((n,n))
+for i in range(n):
+    for j in range(1,i):
+        e = random.random() < 5/n**1.3
+        a[i,j] = e
+        a[j,i] = e
+
+g = graph.Graph(n,a)
+x,y = g.visualize()
 edges = g.get_edges()
-
 
 
 driscrete_template = go.layout.Template()
